@@ -9,9 +9,9 @@ public class Task<T> {
     private final Callable<? extends T> callable;
     private final Object lock = new Object();
     private boolean isCalculated = false;
-    private boolean exceptionThrown = false;
-    private T result;
-    private Exception exception;
+    private volatile boolean exceptionThrown = false;
+    private volatile T result;
+    private volatile Exception exception;
 
     public Task(Callable<? extends T> callable) {
         this.callable = callable;
