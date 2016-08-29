@@ -10,7 +10,6 @@ import static java.lang.Thread.State.TERMINATED;
  * Created by Alexander Ushakov on 28.08.2016.
  */
 public class ContextImpl implements Context {
-    private final Thread callback;
     private final List<Thread> newThreads;
     private final ExceptionCounter h;
     private final Object lock = new Object();
@@ -18,8 +17,7 @@ public class ContextImpl implements Context {
     private volatile int completed = 0;
     private volatile int interrupted = 0;
 
-    public ContextImpl(Thread callback, List<Thread> newThreads, ExceptionCounter h) {
-        this.callback = callback;
+    public ContextImpl(List<Thread> newThreads, ExceptionCounter h) {
         this.newThreads = newThreads;
         this.h = h;
         total = newThreads.size();
@@ -65,14 +63,6 @@ public class ContextImpl implements Context {
                 t.interrupt();
             }
         }
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        if (isFinished()) {
-            callback.start();
-        }
-        super.finalize();
     }
 
     @Override

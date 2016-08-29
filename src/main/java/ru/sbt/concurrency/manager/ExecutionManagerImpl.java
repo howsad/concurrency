@@ -18,6 +18,22 @@ public class ExecutionManagerImpl implements ExecutionManager {
             t.setUncaughtExceptionHandler(h);
             t.start();
         }
-        return new ContextImpl(callbackThread, threads, h);
+        ContextImpl context = new ContextImpl(threads, h);
+        int nTasks = tasks.length;
+        runCallbackThread(callback, context, nTasks);
+        return context;
+    }
+
+    private void runCallbackThread(Runnable callback, Context context, int nTasks) {
+        new Thread(() -> {
+            while (context.getCompletedTaskCount() != nTasks) {
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            callback.run();
+        }).start();
     }
 }
