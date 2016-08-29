@@ -13,6 +13,7 @@ public class ContextImpl implements Context {
     private final Thread callback;
     private final List<Thread> newThreads;
     private final ExceptionCounter h;
+    private final Object lock = new Object();
     private final int total;
     private volatile int completed = 0;
     private volatile int interrupted = 0;
@@ -31,13 +32,15 @@ public class ContextImpl implements Context {
     }
 
     private void checkState() {
-        Iterator<Thread> i = newThreads.iterator();
-        while (i.hasNext()) {
-            Thread.State state = i.next().getState();
-            if (!state.equals(NEW)) {
-                i.remove();
-                if (state.equals(TERMINATED)) {
-                    completed++;
+        synchronized (lock) {
+            Iterator<Thread> i = newThreads.iterator();
+            while (i.hasNext()) {
+                Thread.State state = i.next().getState();
+                if (!state.equals(NEW)) {
+                    i.remove();
+                    if (state.equals(TERMINATED)) {
+                        completed++;
+                    }
                 }
             }
         }
@@ -56,10 +59,20 @@ public class ContextImpl implements Context {
     @Override
     public void interrupt() {
         checkState();
-        for (Thread t : newThreads) {
-            interrupted++;
-            t.interrupt();
+        synchronized (lock) {
+            for (Thread t : newThreads) {
+                interrupted++;
+                t.interrupt();
+            }
         }
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        if (isFinished()) {
+            callback.start();
+        }
+        super.finalize();
     }
 
     @Override
