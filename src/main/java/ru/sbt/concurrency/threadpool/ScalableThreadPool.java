@@ -6,13 +6,14 @@ package ru.sbt.concurrency.threadpool;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ScalableThreadPool implements ThreadPool {
     private final Queue<Runnable> tasks = new ArrayDeque<>();
     private final int min;
     private final int max;
     private final Object lock = new Object();
-    private volatile int nThreads = 0;
+    private final AtomicInteger nThreads = new AtomicInteger();
 
     public ScalableThreadPool(int min, int max) {
         this.min = min;
@@ -35,8 +36,8 @@ public class ScalableThreadPool implements ThreadPool {
     }
 
     private void newWorker() {
-        if (nThreads < max) {
-            nThreads++;
+        if (nThreads.get() < max) {
+            nThreads.incrementAndGet();
             new Worker().start();
         }
     }
@@ -48,8 +49,8 @@ public class ScalableThreadPool implements ThreadPool {
                 Runnable task;
                 synchronized (lock) {
                     while (tasks.isEmpty()) {
-                        if (nThreads > min) {
-                            nThreads--;
+                        if (nThreads.get() > min) {
+                            nThreads.decrementAndGet();
                             return;
                         }
                         try {
@@ -64,7 +65,7 @@ public class ScalableThreadPool implements ThreadPool {
                     newWorker();
                     task.run();
                 } catch (Throwable t) {
-                    nThreads--;
+                    nThreads.decrementAndGet();
                     synchronized (lock) {
                         if (!tasks.isEmpty()) {
                             newWorker();
