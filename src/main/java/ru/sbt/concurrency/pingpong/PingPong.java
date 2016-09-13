@@ -6,8 +6,7 @@ import static java.lang.Boolean.*;
  * Created by Alexander Ushakov on 13.09.2016.
  */
 public class PingPong {
-    private volatile boolean isPingTurn = true;
-    private ThreadLocal<Boolean> isPing = new ThreadLocal<>();
+    private boolean isPingTurn = true;
 
     public static void main(String[] args) {
         PingPong pingPong = new PingPong();
@@ -17,7 +16,6 @@ public class PingPong {
 
     private void runPing() {
         new Thread(() -> {
-            isPing.set(TRUE);
             while (true) {
                 synchronized (this) {
                     while (!isPingTurn) {
@@ -37,7 +35,6 @@ public class PingPong {
 
     private void runPong() {
         new Thread(() -> {
-            isPing.set(FALSE);
             while (true) {
                 synchronized (this) {
                     while (isPingTurn) {
